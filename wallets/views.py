@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.views import APIView
+# from rest_framework.views import APIView
 from config.permissions import IsTenantAuthenticated
 from wallets.models import Wallet
 from wallets.serializers import WalletSerializer,WalletCreateSerializer,MoneyOperationSerializer,TransferSerializer
@@ -16,18 +16,37 @@ class WalletViewSet(ModelViewSet):
     lookup_url_kwarg = "wallet_id"
     http_method_names = ["get", "post"]
     pagination_class = TransactionPagination
+
+
+    """superuser acces only same tenant"""
+    # def get_queryset(self):
+    #     queryset = Wallet.objects.filter(
+    #         tenant=self.request.tenant
+    #     )
+
+    #     if self.request.user.is_staff:
+    #         return queryset
+
+    #     return queryset.filter(
+    #         owner=self.request.user
+    #     )
+
     def get_queryset(self):
-        queryset = Wallet.objects.filter(
-            tenant=self.request.tenant
-        )
+            if self.request.user.is_superuser:
+                return Wallet.objects.all()
+    
+            queryset = Wallet.objects.filter(
+                tenant=self.request.tenant
+            )
+    
+            if self.request.user.is_staff:
+                return queryset
+    
+            return queryset.filter(
+                owner=self.request.user
+            )
 
-        if self.request.user.is_staff:
-            return queryset
-
-        return queryset.filter(
-            owner=self.request.user
-        )
-
+  
     def get_serializer_class(self):
 
         if self.action == "create":
@@ -40,6 +59,9 @@ class WalletViewSet(ModelViewSet):
             return TransferSerializer
 
         return WalletSerializer
+
+
+    
 
     def perform_create(self, serializer):
         wallet = WalletService.create_wallet(
@@ -115,8 +137,10 @@ class WalletViewSet(ModelViewSet):
 
         return Response(serializer.data)
 
-    @action(detail=False, methods=["post"])
-    def transfer(self, request):
+    @action(detail=True, methods=["post"])
+    def transfer(self, request, wallet_id=None):
+
+        source_wallet = self.get_object()
 
         serializer = TransferSerializer(
             data=request.data
@@ -125,48 +149,48 @@ class WalletViewSet(ModelViewSet):
 
         result = WalletService.transfer(
             tenant=request.tenant,
+            from_wallet_id=source_wallet.id,
             to_wallet_id=serializer.validated_data["to_wallet_id"],
             amount=serializer.validated_data["amount"],
             idempotency_key=serializer.validated_data["idempotency_key"],
-            owner=request.user,
         )
 
         return Response(result, status=201)
 
-class TransferCreateView(APIView):
-    permission_classes = [IsTenantAuthenticated]
-    def post(self, request):
+# class TransferCreateView(APIView):
+#     permission_classes = [IsTenantAuthenticated]
+#     def post(self, request):
 
-        serializer = TransferSerializer(
-            data=request.data)
-        serializer.is_valid(raise_exception=True)
+#         serializer = TransferSerializer(
+#             data=request.data)
+#         serializer.is_valid(raise_exception=True)
 
-        from_wallet_id = serializer.validated_data["from_wallet_id"]
-        to_wallet_id = serializer.validated_data["to_wallet_id"]
+#         from_wallet_id = serializer.validated_data["from_wallet_id"]
+#         to_wallet_id = serializer.validated_data["to_wallet_id"]
 
-        if not request.user.is_staff:
-            source_wallet = Wallet.objects.filter(
-                id=from_wallet_id,
-                tenant=request.tenant,
-                owner=request.user,
-            ).exists()
+#         if not request.user.is_staff:
+#             source_wallet = Wallet.objects.filter(
+#                 id=from_wallet_id,
+#                 tenant=request.tenant,
+#                 owner=request.user,
+#             ).exists()
 
-            if not source_wallet:
-                return Response(
-                    {
-                        "detail": "You can only transfer from your own wallet."
-                    },
-                    status=403,
-                )
+#             if not source_wallet:
+#                 return Response(
+#                     {
+#                         "detail": "You can only transfer from your own wallet."
+#                     },
+#                     status=403,
+#                 )
 
-        result = WalletService.transfer(
-            tenant=request.tenant,
-            from_wallet_id=from_wallet_id,
-            to_wallet_id=to_wallet_id,
-            amount=serializer.validated_data["amount"],
-            idempotency_key=serializer.validated_data[
-                "idempotency_key"
-            ],
-        )
+#         result = WalletService.transfer(
+#             tenant=request.tenant,
+#             from_wallet_id=from_wallet_id,
+#             to_wallet_id=to_wallet_id,
+#             amount=serializer.validated_data["amount"],
+#             idempotency_key=serializer.validated_data[
+#                 "idempotency_key"
+#             ],
+#         )
 
-        return Response(result, status=201)
+#         return Response(result, status=201)

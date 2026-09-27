@@ -7,7 +7,7 @@ import uuid
 import hashlib
 import json
 from config.exceptions import WalletAlreadyExists
-
+from rest_framework.exceptions import ValidationError
 
 class WalletService:
 
@@ -142,33 +142,39 @@ class WalletService:
 
     @staticmethod
     @transaction.atomic
-    def transfer(
-        tenant,
-        owner,
-        to_wallet_id,
-        amount,
-        idempotency_key,
-    ):
-        from_wallet = Wallet.objects.filter(
-            tenant=tenant,
-            owner=owner,
-        ).first()
-
-        if from_wallet is None:
-            raise ValueError("Sender wallet not found.")
-
-        to_wallet = Wallet.objects.filter(
-            tenant=tenant,
-            id=to_wallet_id,
-        ).first()
-
-        if to_wallet is None:
-            raise ValueError("Destination wallet not found.")
-
-        if from_wallet.id == to_wallet.id:
-            raise ValueError(
+    def transfer(tenant,from_wallet_id,to_wallet_id, amount, idempotency_key,):
+        if from_wallet_id == to_wallet_id:
+            raise ValidationError(
                 "Source and destination wallets must be different."
             )
+
+        wallet_ids = sorted(
+            [from_wallet_id, to_wallet_id],
+            key=str,
+        )
+
+        wallets = (
+            Wallet.objects
+            .select_for_update()
+            .filter(
+                tenant=tenant,
+                id__in=wallet_ids,
+            )
+            .order_by("id")
+        )
+
+        wallet_map = {
+            str(wallet.id): wallet
+            for wallet in wallets
+        }
+
+        if len(wallet_map) != 2:
+            raise ValidationError(
+                "Source or destination wallet not found."
+            )
+
+        from_wallet = wallet_map[str(from_wallet_id)]
+        to_wallet = wallet_map[str(to_wallet_id)]
 
         fingerprint_data = {
             "from_wallet_id": str(from_wallet.id),
@@ -191,45 +197,20 @@ class WalletService:
 
         if existing:
             if existing.request_fingerprint != request_fingerprint:
-                raise ValueError(
+                raise ValidationError(
                     "This idempotency key was already used "
                     "for a different request."
                 )
 
             return existing.response_body
 
-        wallet_ids = sorted(
-            [from_wallet.id, to_wallet.id],
-            key=str,
-        )
-
-        wallets = (
-            Wallet.objects
-            .select_for_update()
-            .filter(
-                tenant=tenant,
-                id__in=wallet_ids,
-            )
-            .order_by("id")
-        )
-
-        wallet_map = {
-            str(wallet.id): wallet
-            for wallet in wallets
-        }
-
-        if len(wallet_map) != 2:
-            raise ValueError(
-                "One or both wallets were not found."
-            )
-
-        from_wallet = wallet_map[str(from_wallet.id)]
-        to_wallet = wallet_map[str(to_wallet.id)]
-
         if from_wallet.balance < amount:
-            raise ValueError("Insufficient funds.")
+            raise ValidationError(
+                "Insufficient funds."
+            )
 
         transfer_group_id = uuid.uuid4()
+
         from_wallet.balance -= amount
         to_wallet.balance += amount
 

@@ -208,8 +208,3 @@ concurrent transfer locking, and cross-tenant access being blocked.
   the key is additionally checked against a fingerprint of
   `(from_wallet, to_wallet, amount)` so the same key can't silently be
   reused for a different transfer.
-- Given the ~4–5 hour scope, this favors correctness of the core
-  money-movement logic (locking, atomicity, ledger-as-source-of-truth,
-  idempotency) over production concerns like rate limiting, refresh-token
-  rotation/blacklisting, or fine-grained permissions beyond tenant/owner
-  checks.
