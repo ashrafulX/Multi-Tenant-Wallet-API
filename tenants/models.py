@@ -9,7 +9,7 @@ def generate_api_key():
 
 class Tenant(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid4,editable=False)
-    name=models.CharField(max_length=150)
+    name=models.CharField(max_length=150,unique=True)
     api_key=models.CharField(max_length=64,unique=True,default=generate_api_key,editable=False)
     is_active=models.BooleanField(default=True)
     created_at=models.DateTimeField(auto_now_add=True)

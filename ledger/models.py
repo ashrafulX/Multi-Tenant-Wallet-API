@@ -15,7 +15,7 @@ class IdempotencyKey(models.Model):
     (TRANSFER, "Transfer"),
     ]
 
-    id=models.UUIDField(primary_key=True,editable=False)
+    id=models.UUIDField(primary_key=True,default=uuid4,editable=False)
     tenant=models.ForeignKey(Tenant,on_delete=models.CASCADE,related_name='idempotency_keys')
     key=models.CharField(max_length=255)
     scope=models.CharField(max_length=20,choices=IDEMPOTENCY_SCOPE)
@@ -39,7 +39,7 @@ class Transaction(models.Model):
         (TRANSFER_IN,"Transfer In"),
     ]
 
-    id=models.UUIDField(primary_key=True)
+    id=models.UUIDField(primary_key=True,default=uuid4,editable=False)
     tenant=models.ForeignKey(Tenant,on_delete=models.PROTECT,related_name='transactions')
     wallet=models.ForeignKey(Wallet,on_delete=models.PROTECT,related_name='transactions')
     type=models.CharField(max_length=20,choices=TRANSACTION_TYPE)
