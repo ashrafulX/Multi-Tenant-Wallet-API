@@ -204,7 +204,3 @@ concurrent transfer locking, and cross-tenant access being blocked.
 - Each user has at most one wallet (`Wallet.owner` is a `OneToOneField`).
 - Tenant identity is resolved from the `X-API-Key` header rather than a
   subdomain or path prefix, for simplicity.
-- Idempotency keys are scoped per tenant + operation type; for transfers,
-  the key is additionally checked against a fingerprint of
-  `(from_wallet, to_wallet, amount)` so the same key can't silently be
-  reused for a different transfer.
