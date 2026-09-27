@@ -10,17 +10,18 @@ platform while their data stays fully isolated from one another.
 
 
 ## Trying It Out
-
-A demo admin account is available on the live deployment for testing:
-### Tenant A 
-- **Username:** `admin`
-- **Password:** `Admin@123`
-
-A demo User account is available on the live deployment for testing:
-### Tenant B
-- **Username:** `sherlock`
-- **Password:** `Admin@123`
-
+ 
+Demo accounts are available on the live deployment for testing:
+ 
+> [!IMPORTANT]
+> **Tenant A — Admin account**
+> - **Username:** `admin`
+> - **Password:** `Admin@123`
+ 
+> [!TIP]
+> **Tenant B — User account**
+> - **Username:** `sherlock`
+> - **Password:** `Admin@123`
 
 ---
 
@@ -76,6 +77,27 @@ A demo User account is available on the live deployment for testing:
   concurrent deposits/withdrawals/transfers on the same wallet(s) can't
   race each other. For transfers, both wallets are locked together in a
   fixed (sorted) order to avoid deadlocks.
+
+## 🔑 Idempotency Key
+
+> **IMPORTANT:** Deposit, withdraw, and transfer operations require a
+> **client-supplied `idempotency_key`**.
+
+### Why is an Idempotency Key needed?
+
+An idempotency key prevents the **same money operation from being executed
+more than once** when a client retries the same request.
+
+For example, suppose a user deposits **৳500** and the request succeeds, but
+the network response is lost. The client may send the same request again.
+
+Without idempotency:
+
+```text
+First request  → +৳500
+Retry request  → +৳500
+
+Final balance → +৳1000 ❌
 
 ## API Endpoints
 
