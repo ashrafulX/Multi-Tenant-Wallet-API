@@ -14,7 +14,6 @@ urlpatterns = [
     path('',include(router.urls)),
     path('auth/',include('djoser.urls')),
     path('auth/',include('djoser.urls.jwt')),
-    # path("api/transfers/", TransferCreateView.as_view(), name="transfer-create"),
     
 
 
