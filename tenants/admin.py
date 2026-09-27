@@ -1,5 +1,11 @@
 from django.contrib import admin
 from .models import Tenant
-# Register your models here.
-admin.site.register(Tenant)
 
+@admin.register(Tenant)
+class TenantAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "name",
+        "is_active",
+        "created_at",
+    )

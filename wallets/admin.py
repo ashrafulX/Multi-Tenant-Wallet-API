@@ -1,4 +1,14 @@
 from django.contrib import admin
 from .models import Wallet
-# Register your models here.
-admin.site.register(Wallet)
+
+@admin.register(Wallet)
+class WalletAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "tenant",
+        "owner",
+        "balance",
+        "created_at",
+    )
+
+    show_full_result_count = False

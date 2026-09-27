@@ -49,3 +49,7 @@ class TenantUserAdmin(UserAdmin):
             }
         ),
     )
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related("tenant")
