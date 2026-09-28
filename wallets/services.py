@@ -41,8 +41,7 @@ class WalletService:
     ):
         wallet = Wallet.objects.select_for_update().filter(
             id=wallet_id,
-            tenant=tenant
-        ).first()
+            tenant=tenant).first()
 
         if wallet is None:
             raise ValueError("Wallet not found.")

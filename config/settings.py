@@ -175,10 +175,12 @@ MAILERS = {
 
 
 
+
 REST_FRAMEWORK = {
     "COERCE_DECIMAL_TO_STRING": False,
 
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        "config.authentication.TenantAPIKeyAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
